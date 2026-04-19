@@ -1,0 +1,17 @@
+# Rust / Soroban
+contracts/target/
+*.wasm
+.deployer_secret
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+frontend/.env.local
+frontend/.env*.local
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
+.vercel
