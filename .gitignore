@@ -15,3 +15,7 @@ frontend/.env*.local
 *.log
 npm-debug.log*
 .vercel
+
+# Stellar CLI
+.deployer_secret
+*.optimized.wasm
