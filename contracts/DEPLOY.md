@@ -1,0 +1,8 @@
+# Contract Deployment
+
+## Testnet Contracts
+- EscrowContract: CBRMNLQFYIEQ6LQGYJQTAIZVNHHQDQBRLPVIWK74NZHRRKDKVOQP3LEQ
+- SplitBillContract: CDHD3Q6665MYWAXFWJYVYJUGXMALGKPEAOJRIE73UEAGPBQODW6VEPZP
+
+## Deploy Command
+./scripts/deploy.sh
