@@ -165,10 +165,10 @@ cd frontend && npm test
 | User | Tx Hash | Explorer |
 |------|---------|---------|
 | Budi Santoso | `a5a0e11302ff66bb2c884e3b1da223d1e8683a0e7d0766bb56ad49111e32aede` | [View](https://stellar.expert/explorer/testnet/tx/a5a0e11302ff66bb2c884e3b1da223d1e8683a0e7d0766bb56ad49111e32aede) |
-| Rina Dewi | _(add tx hash)_ | |
-| Ahmad Fauzi | _(add tx hash)_ | |
-| Siti Rahayu | _(add tx hash)_ | |
-| Dedi Kurniawan | _(add tx hash)_ | |
+| Rina Dewi | `2cbcbc731dbd0f7a024182bd5adc8c60ec7753e715c03b307cb67c58d60478f1` | [View](https://stellar.expert/explorer/testnet/tx/2cbcbc731dbd0f7a024182bd5adc8c60ec7753e715c03b307cb67c58d60478f1) |
+| Ahmad Fauzi | `c0efa7b3d6e48330e59ab455b5231dcd6ea7773f5cd222d51f7abc6ec521371d` | [View](https://stellar.expert/explorer/testnet/tx/c0efa7b3d6e48330e59ab455b5231dcd6ea7773f5cd222d51f7abc6ec521371d) |
+| Siti Rahayu | `0a58f85c3b5ecc320c5794c7e5dbe96c3776b8ec5d60c1ee5d2d58870b68c5a1` | [View](https://stellar.expert/explorer/testnet/tx/0a58f85c3b5ecc320c5794c7e5dbe96c3776b8ec5d60c1ee5d2d58870b68c5a1) |
+| Dedi Kurniawan | `2e2665d060d3ceeb5c933dca3bfb87c9d8d9674ec366505b8d205a6cd7305222` | [View](https://stellar.expert/explorer/testnet/tx/2e2665d060d3ceeb5c933dca3bfb87c9d8d9674ec366505b8d205a6cd7305222) |
 
 ---
 
