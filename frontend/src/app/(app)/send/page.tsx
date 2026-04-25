@@ -141,7 +141,7 @@ export default function SendPage() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-4 py-3 pr-20 rounded-xl bg-surface-2 border border-white/[0.06] text-text-primary placeholder:text-text-muted font-body text-sm focus:outline-none focus:border-accent-gold/40 focus:ring-1 focus:ring-accent-gold/20 transition-all duration-200 font-mono text-lg"
+                    className="w-full px-4 py-3 pr-20 rounded-xl bg-surface-2 border border-white/[0.06] text-text-primary placeholder:text-text-muted font-body text-sm focus:outline-none focus:border-accent-gold/40 focus:ring-1 focus:ring-accent-gold/20 transition-all duration-200"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
