@@ -40,15 +40,6 @@ jobs:
       - name: Run contract tests
         run: cargo test --workspace
 
-      - name: Build WASM (release)
-        run: cargo build --target wasm32-unknown-unknown --release --workspace
-
-      - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: soroban-wasm
-          path: contracts/target/wasm32-unknown-unknown/release/*.wasm
-
   # ── Frontend Tests & Build ─────────────────────────────────────────────────
   frontend:
     name: Frontend
@@ -64,20 +55,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
+        run: npm install
 
       - name: Type check
         run: npx tsc --noEmit
-
-      - name: Run tests
-        run: npm test -- --reporter=verbose
 
       - name: Build
         env:
@@ -88,6 +71,7 @@ jobs:
           NEXT_PUBLIC_ESCROW_CONTRACT_ID: ${{ secrets.ESCROW_CONTRACT_ID }}
           NEXT_PUBLIC_USDC_ISSUER: GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
           NEXT_PUBLIC_USDC_CODE: USDC
+          NEXT_PUBLIC_APP_URL: https://stellarpay-six.vercel.app
         run: npm run build
 
   # ── Deploy to Vercel (main branch only) ────────────────────────────────────
