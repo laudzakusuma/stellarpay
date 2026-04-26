@@ -318,5 +318,3 @@ stellarpay/
 MIT — see [LICENSE](./LICENSE)
 
 ---
-
-*Built with Soroban on Stellar Testnet for the Stellar Developer Program — Level 5 Blue Belt.*
