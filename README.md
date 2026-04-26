@@ -253,7 +253,9 @@ cd frontend && npm test
 
 ---
 
-## CI/CD Pipeline
+## CI/CD 
+
+![CI/CD](docs/screenshots/cicd.png)
 
 Auto-deploys to Vercel on every push to `main` via GitHub Actions.
 
