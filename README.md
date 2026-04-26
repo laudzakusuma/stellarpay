@@ -4,14 +4,35 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Network](https://img.shields.io/badge/Network-Stellar%20Testnet-blue)](https://stellar.expert/explorer/testnet)
-[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://stellarpay-six.vercel.app)
+[![Deployed](https://img.shields.io/badge/Deployed-Vercel-black)](https://stellarpay-six.vercel.app)
+[![CI](https://github.com/laudzakusuma/stellarpay/actions/workflows/ci.yml/badge.svg)](https://github.com/laudzakusuma/stellarpay/actions)
+
+> Send USDC anywhere in the world in 5 seconds for less than $0.001. Split bills transparently with Soroban smart contracts and automatic settlement.
 
 ---
 
 ## Live Demo
 
 - **App:** https://stellarpay-six.vercel.app
-- **Demo Video:** _(tambahkan link YouTube setelah record)_
+- **Demo Video:** https://youtu.be/mD_ngLYUu8A
+
+---
+
+## Screenshots
+
+### Landing Page
+![Landing Page](docs/screenshots/landing.png)
+
+### Send USDC
+![Send USDC](docs/screenshots/send.png)
+
+### Split Bill
+![Split Bill](docs/screenshots/split.png)
+
+### Connect Wallet
+![Connect Wallet](docs/screenshots/wallet.png)
+
+> To add screenshots: create folder `docs/screenshots/` and add your images there.
 
 ---
 
@@ -19,8 +40,8 @@
 
 | Contract | Address | Explorer |
 |----------|---------|---------|
-| EscrowContract | `CBRMNLQFYIEQ6LQGYJQTAIZVNHHQDQBRLPVIWK74NZHRRKDKVOQP3LEQ` | [View on Explorer](https://stellar.expert/explorer/testnet/contract/CBRMNLQFYIEQ6LQGYJQTAIZVNHHQDQBRLPVIWK74NZHRRKDKVOQP3LEQ) |
-| SplitBillContract | `CDHD3Q6665MYWAXFWJYVYJUGXMALGKPEAOJRIE73UEAGPBQODW6VEPZP` | [View on Explorer](https://stellar.expert/explorer/testnet/contract/CDHD3Q6665MYWAXFWJYVYJUGXMALGKPEAOJRIE73UEAGPBQODW6VEPZP) |
+| EscrowContract | `CBRMNLQFYIEQ6LQGYJQTAIZVNHHQDQBRLPVIWK74NZHRRKDKVOQP3LEQ` | [View](https://stellar.expert/explorer/testnet/contract/CBRMNLQFYIEQ6LQGYJQTAIZVNHHQDQBRLPVIWK74NZHRRKDKVOQP3LEQ) |
+| SplitBillContract | `CDHD3Q6665MYWAXFWJYVYJUGXMALGKPEAOJRIE73UEAGPBQODW6VEPZP` | [View](https://stellar.expert/explorer/testnet/contract/CDHD3Q6665MYWAXFWJYVYJUGXMALGKPEAOJRIE73UEAGPBQODW6VEPZP) |
 
 ---
 
@@ -49,6 +70,10 @@ Next.js Frontend (Vercel CDN)
       │
       ├─ Horizon REST API  →  Stellar Ledger (payments, history)
       └─ Soroban RPC       →  EscrowContract + SplitBillContract
+                                      │
+                                inter-contract call
+                                      │
+                             EscrowContract ◄── SplitBillContract
 ```
 
 ### Smart Contracts
@@ -62,9 +87,8 @@ Next.js Frontend (Vercel CDN)
 **SplitBillContract** (`contracts/split_bill/src/lib.rs`)
 - `initialize(admin, escrow_contract)` — setup with inter-contract reference
 - `create_bill(owner, title, token, members, amounts)` → bill_id
-- `pay_share(member, bill_id)` — member pays their share
+- `pay_share(member, bill_id)` — member pays their share, auto-releases when all paid
 - `cancel_bill(caller, bill_id)` — cancel and refund paid members
-- Auto-release to owner when all members have paid
 
 ---
 
@@ -102,7 +126,7 @@ node --version
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/stellarpay.git
+git clone https://github.com/laudzakusuma/stellarpay.git
 cd stellarpay/frontend
 npm install
 ```
@@ -111,10 +135,10 @@ npm install
 
 ```bash
 cp frontend/.env.example frontend/.env.local
-# Edit .env.local dengan contract addresses
+# Edit .env.local with contract addresses
 ```
 
-### 3. Deploy Contracts (opsional, sudah deployed)
+### 3. Deploy Contracts (optional — already deployed on testnet)
 
 ```bash
 chmod +x scripts/deploy.sh
@@ -126,7 +150,7 @@ chmod +x scripts/deploy.sh
 ```bash
 cd frontend
 npm run dev
-# Buka http://localhost:3000
+# Open http://localhost:3000
 ```
 
 ### 5. Run Tests
@@ -135,7 +159,7 @@ npm run dev
 # Contract tests
 cd contracts && cargo test --workspace
 
-# Frontend tests
+# Frontend tests  
 cd frontend && npm test
 ```
 
@@ -148,7 +172,7 @@ cd frontend && npm test
 
 **Exported Responses:** [docs/user-feedback.xlsx](./docs/user-feedback.xlsx)
 
-### Testnet Users (5 verified)
+### Testnet Users (5 Verified)
 
 | # | Name | Wallet Address | Date Onboarded |
 |---|------|---------------|----------------|
@@ -190,9 +214,9 @@ cd frontend && npm test
 
 | # | Feedback | Improvement Made | Commit |
 |---|----------|-----------------|--------|
-| 1 | No install needed | Added Albedo web wallet support | [51e1533](../../commit/51e1533) |
+| 1 | No install needed | Added Albedo web wallet — zero friction onboarding | [51e1533](../../commit/51e1533) |
 | 2 | Better mobile UI | Implemented mobile-first responsive design | [8a4894b](../../commit/8a4894b) |
-| 3 | More wallet options | Added Freighter + Albedo + xBull selector modal | [93aa364](../../commit/93aa364) |
+| 3 | More wallet options | Added Freighter + Albedo + xBull selector modal with blur backdrop | [93aa364](../../commit/93aa364) |
 
 ### Next Phase Roadmap
 
@@ -200,7 +224,32 @@ cd frontend && npm test
 2. **Push Notifications** — alert members when a bill is created or someone pays
 3. **Fiat On-ramp** — MoneyGram Anchor integration for direct IDR to USDC conversion
 4. **Recurring Payments** — monthly remittance scheduling for overseas workers (TKI)
-5. **Mobile PWA** — installable mobile app with offline support
+5. **Mobile PWA** — installable mobile app with offline support and biometric auth
+6. **QR Code Payments** — generate and scan QR for instant payment initiation
+7. **IDR Price Display** — show estimated IDR equivalent alongside USDC amounts
+
+---
+
+## Why Stellar?
+
+| Feature | Stellar | Ethereum | Traditional Bank |
+|---------|---------|----------|-----------------|
+| Transaction speed | ~5 seconds | ~15 minutes | 1-3 days |
+| Fee per transaction | < $0.001 | $5-50 | $15-30 |
+| USDC support | Native | ERC-20 | No |
+| Fiat off-ramp | Anchor network | Manual bridges | Built-in |
+| Smart contracts | Soroban (Rust) | Solidity | No |
+
+---
+
+## Market Opportunity
+
+| Metric | Value |
+|--------|-------|
+| Remittance to Indonesia (2023) | $8.9 billion |
+| Average fee (Western Union/Bank) | 6–8% |
+| Fee on Stellar | < 0.001% |
+| Target users | Indonesian freelancers, TKI, friend groups |
 
 ---
 
@@ -211,15 +260,15 @@ Auto-deploys to Vercel on every push to `main` via GitHub Actions.
 ```
 Push to main
     │
-    ├─ Job: contracts → cargo test + cargo build --target wasm32v1-none
-    ├─ Job: frontend  → lint + tsc + vitest + next build
+    ├─ Job: contracts → cargo test + cargo build wasm32v1-none
+    ├─ Job: frontend  → tsc + next build
     └─ Job: deploy    → vercel --prod (main branch only)
 ```
 
 Required GitHub Secrets:
 ```
 VERCEL_TOKEN
-VERCEL_ORG_ID
+VERCEL_ORG_ID  
 VERCEL_PROJECT_ID
 SPLIT_BILL_CONTRACT_ID
 ESCROW_CONTRACT_ID
@@ -234,6 +283,7 @@ stellarpay/
 ├── contracts/
 │   ├── escrow/src/lib.rs          # EscrowContract (Rust/Soroban)
 │   ├── split_bill/src/lib.rs      # SplitBillContract (Rust/Soroban)
+│   ├── .cargo/config.toml         # Build flags for Stellar VM
 │   └── Cargo.toml                 # Workspace config
 ├── frontend/
 │   ├── src/app/
@@ -246,14 +296,16 @@ stellarpay/
 │   ├── src/components/
 │   │   ├── ui/                    # Button, Card, Input, Badge, Modal
 │   │   ├── layout/                # Navbar, AppShell
-│   │   └── wallet/                # Multi-wallet selector
+│   │   └── wallet/                # Multi-wallet selector with blur
 │   └── src/lib/
 │       ├── stellar.ts             # Horizon REST API utils
 │       ├── contracts.ts           # Soroban RPC helpers
 │       └── walletStore.ts         # Zustand wallet state
 ├── scripts/deploy.sh              # Testnet deployment script
 ├── .github/workflows/ci.yml       # GitHub Actions CI/CD
-├── docs/user-feedback.xlsx        # User feedback data
+├── docs/
+│   ├── user-feedback.xlsx         # User feedback data
+│   └── screenshots/               # App screenshots
 └── ARCHITECTURE.md                # System architecture docs
 ```
 
@@ -262,3 +314,7 @@ stellarpay/
 ## License
 
 MIT — see [LICENSE](./LICENSE)
+
+---
+
+*Built with Soroban on Stellar Testnet for the Stellar Developer Program — Level 5 Blue Belt.*
