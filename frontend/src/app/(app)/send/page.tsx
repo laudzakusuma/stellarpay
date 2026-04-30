@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Send, AlertCircle, CheckCircle2, Info, ExternalLink } from 'lucide-react';
+import { Send, AlertCircle, CheckCircle2, Info, ExternalLink, Copy } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -22,7 +22,8 @@ const HORIZON_URL = 'https://horizon-testnet.stellar.org';
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015';
 const FEE_ESTIMATE = '0.00001';
 
-// ── Build + sign + submit via connected wallet ────────────────────────────────
+// IDR rate (approximate testnet demo only)
+const XLM_TO_IDR = 3200;
 
 async function sendPayment(params: {
   fromPublicKey: string;
@@ -33,14 +34,10 @@ async function sendPayment(params: {
 }): Promise<string> {
   const { fromPublicKey, walletName, destination, amount, memo } = params;
 
-  // 1. Dynamically import Stellar SDK (server-safe)
   const StellarSdk = await import('@stellar/stellar-sdk');
   const server = new StellarSdk.Horizon.Server(HORIZON_URL);
-
-  // 2. Load account
   const account = await server.loadAccount(fromPublicKey);
 
-  // 3. Build transaction
   const txBuilder = new StellarSdk.TransactionBuilder(account, {
     fee: StellarSdk.BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
@@ -49,7 +46,7 @@ async function sendPayment(params: {
   txBuilder.addOperation(
     StellarSdk.Operation.payment({
       destination,
-      asset: StellarSdk.Asset.native(), // XLM for testnet demo
+      asset: StellarSdk.Asset.native(),
       amount,
     }),
   );
@@ -62,7 +59,6 @@ async function sendPayment(params: {
   const tx = txBuilder.build();
   const txXDR = tx.toXDR();
 
-  // 4. Sign via connected wallet
   let signedXDR = '';
 
   if (walletName === 'Freighter') {
@@ -87,7 +83,6 @@ async function sendPayment(params: {
     throw new Error('Unknown wallet — cannot sign');
   }
 
-  // 5. Submit to Horizon
   const submitRes = await fetch(`${HORIZON_URL}/transactions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -103,19 +98,23 @@ async function sendPayment(params: {
   return data.hash;
 }
 
-// ── Component ────────────────────────────────────────────────────────────────
-
 export default function SendPage() {
   const { publicKey, isConnected, walletName } = useWalletStore();
 
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [txResult, setTxResult] = useState<TxResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [destination, setDestination] = useState('');
   const [amount, setAmount] = useState('');
   const [memo, setMemo] = useState('');
   const [destError, setDestError] = useState('');
+
+  // IDR estimate — based on user feedback (Budi Santoso)
+  const idrEstimate = amount && parseFloat(amount) > 0
+    ? `≈ Rp ${(parseFloat(amount) * XLM_TO_IDR).toLocaleString('id-ID')}`
+    : null;
 
   const validateDest = useCallback((val: string) => {
     if (!val) { setDestError('Destination is required'); return false; }
@@ -158,12 +157,23 @@ export default function SendPage() {
     }
   };
 
+  // Copy payment link — based on user feedback (Dedi Kurniawan)
+  const handleCopyPaymentLink = useCallback(async () => {
+    if (!txResult) return;
+    const link = `${window.location.origin}/pay/${txResult.hash.slice(0, 12)}`;
+    await navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success('Payment link copied!');
+  }, [txResult]);
+
   const reset = () => {
     setStep('form');
     setDestination('');
     setAmount('');
     setMemo('');
     setTxResult(null);
+    setCopied(false);
   };
 
   return (
@@ -192,7 +202,10 @@ export default function SendPage() {
                 label="Recipient Address"
                 placeholder="G... (Stellar public key)"
                 value={destination}
-                onChange={(e) => { setDestination(e.target.value); if (destError) validateDest(e.target.value); }}
+                onChange={(e) => {
+                  setDestination(e.target.value);
+                  if (destError) validateDest(e.target.value);
+                }}
                 onBlur={() => validateDest(destination)}
                 error={destError}
                 hint="Enter a valid Stellar public key (starts with G)"
@@ -203,18 +216,35 @@ export default function SendPage() {
                 }
               />
 
+              {/* Amount with IDR estimate — feedback from Budi Santoso */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Amount (XLM)</label>
+                <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+                  Amount (XLM)
+                </label>
                 <div className="relative">
                   <input
-                    type="number" min="0" step="0.01" placeholder="0.00"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     className="w-full px-4 py-3 pr-20 rounded-xl bg-surface-2 border border-white/[0.06] text-text-primary placeholder:text-text-muted font-mono text-lg focus:outline-none focus:border-accent-gold/40 focus:ring-1 focus:ring-accent-gold/20 transition-all"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-text-secondary">XLM</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-text-secondary">
+                    XLM
+                  </span>
                 </div>
-                <p className="text-xs text-text-muted">Testnet XLM — no real value</p>
+
+                {/* IDR estimate — implemented based on Budi Santoso feedback */}
+                {idrEstimate ? (
+                  <div className="flex items-center gap-2 px-1">
+                    <span className="text-xs text-accent-gold font-medium">{idrEstimate}</span>
+                    <span className="text-xs text-text-muted">(testnet estimate only)</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted px-1">Testnet XLM — no real value</p>
+                )}
               </div>
 
               <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-accent-cyan/5 border border-accent-cyan/15">
@@ -222,7 +252,7 @@ export default function SendPage() {
                 <div>
                   <p className="text-xs font-medium text-accent-cyan">Real On-chain Transaction</p>
                   <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
-                    Your wallet will prompt you to sign. Transaction settles on Stellar in under 5 seconds.
+                    Your wallet will prompt you to sign. Transaction settles in under 5 seconds.
                   </p>
                 </div>
               </div>
@@ -241,7 +271,8 @@ export default function SendPage() {
               </div>
 
               <Button
-                className="w-full" size="lg"
+                className="w-full"
+                size="lg"
                 onClick={handleReview}
                 disabled={!destination || !amount}
                 rightIcon={<Send className="w-4 h-4" />}
@@ -263,13 +294,22 @@ export default function SendPage() {
                 { label: 'From', value: truncateAddress(publicKey || '', 8) },
                 { label: 'To', value: truncateAddress(destination, 8) },
                 { label: 'Amount', value: `${formatAmount(amount)} XLM` },
+                ...(idrEstimate ? [{ label: 'Est. IDR', value: idrEstimate }] : []),
                 { label: 'Network Fee', value: `${FEE_ESTIMATE} XLM` },
                 { label: 'Wallet', value: walletName || 'Unknown' },
                 ...(memo ? [{ label: 'Memo', value: memo }] : []),
               ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0">
+                <div
+                  key={label}
+                  className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0"
+                >
                   <span className="text-sm text-text-muted">{label}</span>
-                  <span className="text-sm text-text-primary font-mono">{value}</span>
+                  <span className={cn(
+                    'text-sm font-mono',
+                    label === 'Est. IDR' ? 'text-accent-gold font-semibold' : 'text-text-primary'
+                  )}>
+                    {value}
+                  </span>
                 </div>
               ))}
             </div>
@@ -282,7 +322,9 @@ export default function SendPage() {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => setStep('form')}>Edit</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => setStep('form')}>
+                Edit
+              </Button>
               <Button className="flex-1" loading={loading} onClick={handleSend}>
                 {loading ? 'Waiting for signature...' : 'Sign & Send'}
               </Button>
@@ -299,35 +341,71 @@ export default function SendPage() {
               <div className="w-16 h-16 rounded-full bg-status-success/10 flex items-center justify-center mb-5">
                 <CheckCircle2 className="w-8 h-8 text-status-success" />
               </div>
-              <h2 className="font-display font-bold text-2xl text-text-primary mb-2">Transfer Sent</h2>
-              <p className="text-text-secondary text-sm mb-6">Confirmed on Stellar Testnet.</p>
+              <h2 className="font-display font-bold text-2xl text-text-primary mb-2">
+                Transfer Sent
+              </h2>
+              <p className="text-text-secondary text-sm mb-6">
+                Confirmed on Stellar Testnet.
+              </p>
 
-              <div className="w-full glass-card rounded-xl p-4 mb-6 text-left space-y-2.5">
+              <div className="w-full glass-card rounded-xl p-4 mb-4 text-left space-y-2.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-text-muted">Amount</span>
-                  <span className="text-accent-gold font-semibold">{formatAmount(txResult.amount)} XLM</span>
+                  <span className="text-accent-gold font-semibold">
+                    {formatAmount(txResult.amount)} XLM
+                  </span>
                 </div>
+                {idrEstimate && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-muted">Est. IDR Value</span>
+                    <span className="text-accent-gold/80 text-xs">{idrEstimate}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-text-muted">Recipient</span>
-                  <span className="font-mono text-text-secondary">{truncateAddress(txResult.destination, 8)}</span>
+                  <span className="font-mono text-text-secondary">
+                    {truncateAddress(txResult.destination, 8)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm items-start gap-2">
                   <span className="text-text-muted shrink-0">Tx Hash</span>
-                  <span className="font-mono text-text-secondary text-xs break-all text-right">{txResult.hash}</span>
+                  <span className="font-mono text-text-secondary text-xs break-all text-right">
+                    {txResult.hash}
+                  </span>
                 </div>
               </div>
+
+              {/* Copy payment link — implemented based on Dedi Kurniawan feedback */}
+              <button
+                onClick={handleCopyPaymentLink}
+                className="w-full flex items-center justify-center gap-2 py-2.5 mb-4 rounded-xl border border-white/[0.08] text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-all"
+              >
+                {copied ? (
+                  <CheckCircle2 className="w-4 h-4 text-status-success" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+                {copied ? 'Payment link copied!' : 'Copy payment link'}
+              </button>
 
               <div className="flex gap-3 w-full">
                 <a
                   href={`https://stellar.expert/explorer/testnet/tx/${txResult.hash}`}
-                  target="_blank" rel="noopener noreferrer"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex-1"
                 >
-                  <Button variant="secondary" className="w-full" rightIcon={<ExternalLink className="w-3.5 h-3.5" />}>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                  >
                     Explorer
                   </Button>
                 </a>
-                <Button className="flex-1" onClick={reset}>New Transfer</Button>
+                <Button className="flex-1" onClick={reset}>
+                  New Transfer
+                </Button>
               </div>
             </div>
           </Card>
