@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import {
-  Users, Plus, Trash2, CheckCircle2, Clock, ExternalLink,
-  Share2, Copy, AlertCircle, ChevronRight,
+  Users, Plus, Trash2, CheckCircle2, Clock,
+  ExternalLink, AlertCircle, Bell,
 } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -75,7 +75,7 @@ function MemberRow({
             className="w-full px-3 py-2.5 pr-16 rounded-xl bg-surface-2 border border-white/[0.06] text-text-primary placeholder:text-text-muted font-mono text-xs focus:outline-none focus:border-accent-gold/40 focus:ring-1 focus:ring-accent-gold/20 transition-all"
           />
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-text-muted">
-            USDC
+            XLM
           </span>
         </div>
       </div>
@@ -101,6 +101,7 @@ function BillCard({
 }) {
   const progress = bill.total > 0 ? (bill.collected / bill.total) * 100 : 0;
   const myMember = bill.members.find((m) => m.address === currentKey);
+  const paidCount = bill.members.filter((m) => m.status === 'paid').length;
 
   return (
     <Card hover className="group">
@@ -110,7 +111,12 @@ function BillCard({
             {bill.title}
           </h3>
           <p className="text-xs text-text-muted mt-0.5">
-            {bill.members.length} members · Created {bill.createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {bill.members.length} members · {paidCount}/{bill.members.length} paid · Created{' '}
+            {bill.createdAt.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })}
           </p>
         </div>
         <Badge
@@ -123,11 +129,10 @@ function BillCard({
         </Badge>
       </div>
 
-      {/* Progress bar */}
       <div className="mb-4">
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="text-text-muted">
-            {formatAmount(bill.collected)} / {formatAmount(bill.total)} USDC collected
+            {formatAmount(bill.collected)} / {formatAmount(bill.total)} XLM collected
           </span>
           <span className="text-accent-gold font-medium">{Math.round(progress)}%</span>
         </div>
@@ -139,7 +144,6 @@ function BillCard({
         </div>
       </div>
 
-      {/* Members */}
       <div className="space-y-2 mb-4">
         {bill.members.map((m) => (
           <div key={m.id} className="flex items-center justify-between">
@@ -150,7 +154,7 @@ function BillCard({
               )}
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted">{formatAmount(m.amount)} USDC</span>
+              <span className="text-xs text-text-muted">{formatAmount(m.amount)} XLM</span>
               {m.status === 'paid' ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
               ) : (
@@ -163,7 +167,7 @@ function BillCard({
 
       {myMember?.status === 'pending' && bill.status === 'open' && (
         <Button className="w-full" size="sm" onClick={() => onPay(bill)}>
-          Pay My Share ({formatAmount(myMember.amount)} USDC)
+          Pay My Share ({formatAmount(myMember.amount)} XLM)
         </Button>
       )}
     </Card>
@@ -174,15 +178,30 @@ const MOCK_BILLS: BillPreview[] = [
   {
     id: '1',
     title: 'Team Dinner Kemang',
-    token: 'USDC',
+    token: 'XLM',
     total: 120,
     collected: 80,
     status: 'open',
-    createdAt: new Date('2025-06-10'),
+    createdAt: new Date('2026-04-22'),
     members: [
-      { id: '1', address: 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN', amount: '40', status: 'paid' },
-      { id: '2', address: 'GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGKM0DHYQBH3AFI5UPJWKN', amount: '40', status: 'paid' },
-      { id: '3', address: 'GDMXNQBJMS3FYI4PFSYCCB4XODQMNMTKPQ5HIKLJRDFIXMD6IQWHF3V', amount: '40', status: 'pending' },
+      {
+        id: '1',
+        address: 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN',
+        amount: '40',
+        status: 'paid',
+      },
+      {
+        id: '2',
+        address: 'GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGKM0DHYQBH3AFI5UPJWKN',
+        amount: '40',
+        status: 'paid',
+      },
+      {
+        id: '3',
+        address: 'GDMXNQBJMS3FYI4PFSYCCB4XODQMNMTKPQ5HIKLJRDFIXMD6IQWHF3V',
+        amount: '40',
+        status: 'pending',
+      },
     ],
   },
 ];
@@ -193,7 +212,6 @@ export default function SplitPage() {
   const [tab, setTab] = useState<'create' | 'active'>('active');
   const [bills, setBills] = useState<BillPreview[]>(MOCK_BILLS);
 
-  // Create form
   const [title, setTitle] = useState('');
   const [members, setMembers] = useState<Member[]>([
     { id: '1', address: '', amount: '', status: 'pending' },
@@ -223,7 +241,9 @@ export default function SplitPage() {
   const handleCreate = async () => {
     if (!isConnected) { toast.error('Connect your wallet first'); return; }
     if (!title.trim()) { toast.error('Enter a bill title'); return; }
-    const invalid = members.some((m) => !isValidStellarAddress(m.address) || !m.amount || parseFloat(m.amount) <= 0);
+    const invalid = members.some(
+      (m) => !isValidStellarAddress(m.address) || !m.amount || parseFloat(m.amount) <= 0,
+    );
     if (invalid) { toast.error('Fill in all member addresses and amounts'); return; }
 
     setCreating(true);
@@ -232,7 +252,7 @@ export default function SplitPage() {
       const newBill: BillPreview = {
         id: Date.now().toString(),
         title,
-        token: 'USDC',
+        token: 'XLM',
         total,
         collected: 0,
         status: 'open',
@@ -240,7 +260,13 @@ export default function SplitPage() {
         members: members.map((m) => ({ ...m, status: 'pending' })),
       };
       setBills((prev) => [newBill, ...prev]);
-      toast.success('Bill created on-chain!');
+
+      // Improved notification — based on Siti Rahayu feedback
+      toast.success(
+        `Bill created! ${members.length} members have been notified to pay their share.`,
+        { duration: 4000, icon: '🔔' },
+      );
+
       setTitle('');
       setMembers([
         { id: '1', address: '', amount: '', status: 'pending' },
@@ -265,12 +291,31 @@ export default function SplitPage() {
           const updated = b.members.map((m) =>
             m.address === publicKey ? { ...m, status: 'paid' as const } : m,
           );
-          const collected = updated.filter((m) => m.status === 'paid').reduce((s, m) => s + parseFloat(m.amount), 0);
+          const collected = updated
+            .filter((m) => m.status === 'paid')
+            .reduce((s, m) => s + parseFloat(m.amount), 0);
           const allPaid = updated.every((m) => m.status === 'paid');
           return { ...b, members: updated, collected, status: allPaid ? 'paid' : 'open' };
         }),
       );
-      toast.success('Payment sent!');
+
+      const myMember = payModal.members.find((m) => m.address === publicKey);
+      const allWillBePaid =
+        payModal.members.filter((m) => m.status === 'paid').length + 1 ===
+        payModal.members.length;
+
+      if (allWillBePaid) {
+        toast.success('All members paid! Funds released to bill owner automatically.', {
+          duration: 5000,
+          icon: '🎉',
+        });
+      } else {
+        toast.success(
+          `Payment sent! Waiting for ${payModal.members.filter((m) => m.status === 'pending').length - 1} more members.`,
+          { duration: 4000, icon: '🔔' },
+        );
+      }
+
       setPayModal(null);
     } catch {
       toast.error('Payment failed');
@@ -312,7 +357,6 @@ export default function SplitPage() {
             <Card className="text-center py-12">
               <Users className="w-10 h-10 text-text-muted mx-auto mb-3" />
               <p className="text-text-secondary font-body">No bills yet.</p>
-              <p className="text-text-muted text-sm mt-1">Create one to get started.</p>
               <Button className="mt-4" size="sm" onClick={() => setTab('create')}>
                 Create Bill
               </Button>
@@ -333,6 +377,14 @@ export default function SplitPage() {
               <p className="text-sm text-status-warning">Connect your wallet to create a bill.</p>
             </div>
           )}
+
+          {/* Notification info — based on Siti Rahayu feedback */}
+          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-status-pending/5 border border-status-pending/15">
+            <Bell className="w-4 h-4 text-status-pending shrink-0 mt-0.5" />
+            <p className="text-xs text-status-pending leading-relaxed">
+              Members will be notified when the bill is created and when all payments are collected.
+            </p>
+          </div>
 
           <Card>
             <CardHeader title="New Bill" subtitle="Members pay their share on-chain" />
@@ -378,11 +430,10 @@ export default function SplitPage() {
                 </div>
               </div>
 
-              {/* Total */}
               <div className="flex items-center justify-between py-3 border-t border-white/[0.06]">
                 <span className="text-sm text-text-muted">Total Bill Amount</span>
                 <span className="font-display font-bold text-lg text-accent-gold">
-                  {formatAmount(total)} USDC
+                  {formatAmount(total)} XLM
                 </span>
               </div>
 
@@ -408,13 +459,18 @@ export default function SplitPage() {
             <div className="glass-card rounded-xl p-4 mb-6 space-y-2.5">
               {(() => {
                 const myMember = payModal.members.find((m) => m.address === publicKey);
+                const remaining = payModal.members.filter((m) => m.status === 'pending').length;
                 return (
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-text-muted">Your Share</span>
                       <span className="font-semibold text-accent-gold">
-                        {formatAmount(myMember?.amount || '0')} USDC
+                        {formatAmount(myMember?.amount || '0')} XLM
                       </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-text-muted">Members Remaining</span>
+                      <span className="text-text-secondary">{remaining} of {payModal.members.length}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-text-muted">Network Fee</span>
